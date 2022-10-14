@@ -1,6 +1,7 @@
 package repls
 
-import repls.IntREPL.{getOpVal, getOperator, isElement, output}
+import repls.Expression.getExpression
+import repls.IntREPL.{getOpVal, getOperator, isElement, stackToString}
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -12,98 +13,104 @@ class IntREPL extends REPLBase {
 
     override def readEval(command: String): String = {
         val elements: Array[String] = command.split("\\s") // split string based on whitespace
-        println(elements.mkString("Array(", ", ", ")"))
-        RPN(elements)
-        ""
+        println(elements.mkString(" "))
+        getValue(elements)
     }
 
-    def RPN(elements: Array[String]): Unit = {
-        var rpn: mutable.Queue[String] = mutable.Queue[String]()
-        val storedNumbers, operators: mutable.Stack[String] = mutable.Stack[String]()
+    def getValue(elements: Array[String]): String = {
+        val value : Expression = getExpression(stackToString(getRPN(elements)))
+        println("final: " + value.toString)
+        value.value.toString
+    }
+
+    def getRPN(elements: Array[String]): mutable.Stack[String] = {
+        var tempElements: mutable.Queue[String] = mutable.Queue[String]()
+        val operators: mutable.Stack[String] = mutable.Stack[String]()
+        val rpn: mutable.Stack[String] = mutable.Stack[String]()
+
 
         for (i <- elements.indices) {
             println(" Current: " + elements(i))
             if (isElement(elements(i))) {
-                println("Push to rpn")
-                rpn += elements(i)
+                println("Push el: " + elements(i))
+               tempElements += elements(i)
             }
             else if (getOperator(elements(i)) != "0") {
-                println("To ops")
+                //println("To ops")
                 handleOps(elements(i))
             }
             else println("Cannot process element: " + elements(i))
-            println("rpn: " + rpn + " | storedNumbers: " + storedNumbers + " | operators: " + operators)
+
         }
 
-        for (i <- rpn.indices) {
-            storedNumbers.push(rpn(i))
+        for (i <- tempElements.indices) {
+            rpn.push(tempElements(i))
         }
 
         while (operators.nonEmpty) {
-            if (operators.top == "(") {
+            if (operators.top == "(" || operators.top == ")") {
                 operators.pop()
             }
-            else storedNumbers.push(operators.pop())
-
+            else rpn.push(operators.pop())
         }
-
-        //pops rpn
-        output(storedNumbers)
 
         def handleOps(op: String): Unit = {
             if (operators.nonEmpty && operators.top != "(") {
 
                 if (op == '('.toString) {
-                    println("Parentheses: (")
-                    for (i <- rpn.indices) {
-                        storedNumbers.push(rpn(i))
+                    // println("Parentheses: (")
+                    for (i <- tempElements.indices) {
+                        rpn.push(tempElements(i))
                     }
-                    rpn = mutable.Queue[String]()
+                    tempElements = mutable.Queue[String]()
                     operators.push(op)
 
                 }
-                else if (op == ")") {
-                    println("Parentheses: )")
+                else if (op == ')'.toString) {
+                    // println("Parentheses: )")
 
-                    for (i <- rpn.indices) {
-                        storedNumbers.push(rpn(i))
+                    for (i <- tempElements.indices) {
+                        rpn.push(tempElements(i))
                     }
-                    while (operators.top != "(") {
-                        storedNumbers.push(operators.pop())
+                    while (operators.top != "(" && operators.top != ")") {
+                        rpn.push(operators.pop())
                     }
                     operators.pop()
-                    if (operators.nonEmpty) storedNumbers.push(operators.pop())
+                    if (operators.nonEmpty && operators.top != ")" && operators.top != "(") {
+                        rpn.push(operators.pop())
+                    }
 
-                    rpn = mutable.Queue[String]()
+                    tempElements = mutable.Queue[String]()
 
                 }
                 else {
-                    println("Not parentheses")
+                    // println("Not parentheses")
                     val opVal: Int = getOpVal(op)
+                    if (opVal == 0) throw new Error("Wrong opVal: " + op)
                     val stackVal: Int = getOpVal(operators.top)
 
                     if (opVal < stackVal) {
-                        rpn += operators.pop()
+                        tempElements += operators.pop()
                         operators.push(op)
                     }
                     else if (opVal == stackVal) {
                         if (operators.top == '-'.toString) {
-                            rpn += operators.pop()
+                            tempElements += operators.pop()
                             operators.push(op)
                         }
                         else operators.push(op)
                     }
                     else {
-                        println("Push to inside ops"); operators.push(op)
+                        operators.push(op)
                     }
                 }
             }
             else {
-                println("Push to ops"); operators.push(op)
+                operators.push(op)
             }
         }
 
-
+        rpn
     }
 
 
@@ -128,6 +135,7 @@ object IntREPL {
             case "+" => 2
             case "-" => 2
             case "*" => 3
+            case _ => 0
         }
     }
 
@@ -138,20 +146,26 @@ object IntREPL {
 
     def isNumber(str: String): Boolean = {
         if (str.isEmpty) return false
-        for (char <- str.toCharArray) {
-            if (!char.isDigit) return false
+        for (item <- str.toCharArray) {
+            if (!item.isDigit) return false
         }
         true
     }
 
-    def output(rpn: mutable.Stack[String]): Unit = {
+    def stackToString(rpn: mutable.Stack[String]): String = {
         var printArr: mutable.ArrayBuffer[String] = ArrayBuffer[String]()
+        var printStr: String = ""
 
         while (rpn.nonEmpty) {
             printArr += rpn.pop()
         }
         printArr = printArr.reverse
-        println(printArr.mkString("", " ", ""))
+
+        for(i <- printArr.indices){
+            printStr += printArr(i)
+            printStr += " "
+        }
+        printStr
     }
 
 
