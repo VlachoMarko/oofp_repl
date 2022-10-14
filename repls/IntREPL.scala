@@ -1,7 +1,7 @@
 package repls
 
 import repls.Expression.getExpression
-import repls.IntREPL.{getOpVal, getOperator, isElement, stackToString}
+import repls.IntREPL.{getOpVal, getOperator, isElement, isVariable, stackToString}
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -10,17 +10,30 @@ class IntREPL extends REPLBase {
     // Have a REPL of type Int
     type Base = Int
     override val replName: String = "ints" // TODO: name me!
+    var variables : Map[String, Int] = Map[String, Int]()
+    var value : Int = 0
 
     override def readEval(command: String): String = {
         val elements: Array[String] = command.split("\\s") // split string based on whitespace
         println(elements.mkString(" "))
-        getValue(elements)
+        if (isVariable(elements(0)) && elements(1) == '='.toString) {
+            val key : String = elements(0)
+            println("sliced: " + elements.slice(2, elements.length).mkString("Array(", ", ", ")"))
+            variables += (key -> getValue(elements.slice(2, elements.length)))
+            println(key + " -> " + variables(elements(0)))
+
+            key + " = " + variables(key).toString
+        } else {
+            getValue(elements).toString
+        }
+
     }
 
-    def getValue(elements: Array[String]): String = {
-        val value : Expression = getExpression(stackToString(getRPN(elements)))
+    def getValue(elements: Array[String]): Int = {
+
+        value = getExpression(stackToString(getRPN(elements))).value
         println("final: " + value.toString)
-        value.value.toString
+        value
     }
 
     def getRPN(elements: Array[String]): mutable.Stack[String] = {
@@ -30,17 +43,21 @@ class IntREPL extends REPLBase {
 
 
         for (i <- elements.indices) {
-            println(" Current: " + elements(i))
-            if (isElement(elements(i))) {
-                println("Push el: " + elements(i))
+
+            if (variables.contains(elements(i))){
+                println("toTemp: " + variables(elements(i)))
+                tempElements += variables(elements(i)).toString
+            }
+            else if (isElement(elements(i))) {
                tempElements += elements(i)
             }
-            else if (getOperator(elements(i)) != "0") {
-                //println("To ops")
+            else if (getOperator(elements(i)) != "notOp") {
+                // println("To op")
                 handleOps(elements(i))
             }
             else println("Cannot process element: " + elements(i))
 
+            // println("Loop | temp: " + tempElements + " | rpn: " + rpn + " | ops: " + operators.mkString("Stack:( ", ", ", " )"))
         }
 
         for (i <- tempElements.indices) {
@@ -55,19 +72,17 @@ class IntREPL extends REPLBase {
         }
 
         def handleOps(op: String): Unit = {
-            if (operators.nonEmpty && operators.top != "(") {
+            if (operators.nonEmpty) {
 
                 if (op == '('.toString) {
-                    // println("Parentheses: (")
+
                     for (i <- tempElements.indices) {
                         rpn.push(tempElements(i))
                     }
                     tempElements = mutable.Queue[String]()
                     operators.push(op)
-
                 }
                 else if (op == ')'.toString) {
-                    // println("Parentheses: )")
 
                     for (i <- tempElements.indices) {
                         rpn.push(tempElements(i))
@@ -76,17 +91,11 @@ class IntREPL extends REPLBase {
                         rpn.push(operators.pop())
                     }
                     operators.pop()
-                    if (operators.nonEmpty && operators.top != ")" && operators.top != "(") {
-                        rpn.push(operators.pop())
-                    }
-
                     tempElements = mutable.Queue[String]()
-
                 }
-                else {
-                    // println("Not parentheses")
+                else if (operators.top != "("){
+
                     val opVal: Int = getOpVal(op)
-                    if (opVal == 0) throw new Error("Wrong opVal: " + op)
                     val stackVal: Int = getOpVal(operators.top)
 
                     if (opVal < stackVal) {
@@ -97,17 +106,13 @@ class IntREPL extends REPLBase {
                         if (operators.top == '-'.toString) {
                             tempElements += operators.pop()
                             operators.push(op)
-                        }
-                        else operators.push(op)
-                    }
-                    else {
-                        operators.push(op)
-                    }
-                }
-            }
-            else {
-                operators.push(op)
-            }
+                        } else operators.push(op)
+
+                    } else { operators.push(op) }
+
+                } else { operators.push(op) }
+
+            } else { operators.push(op) }
         }
 
         rpn
@@ -126,7 +131,7 @@ object IntREPL {
             case "*" => "*"
             case "(" => "("
             case ")" => ")"
-            case _ => "0"
+            case _ => "notOp"
         }
     }
 
@@ -140,7 +145,12 @@ object IntREPL {
     }
 
     def isElement(str: String): Boolean = {
-        if (isNumber(str) || getOperator(str) == "0") return true
+        if (isNumber(str) || getOperator(str) == "notOp") return true
+        false
+    }
+
+    def isVariable(str: String) : Boolean = {
+        if (!isNumber(str) && getOperator(str) == "notOp") return true
         false
     }
 

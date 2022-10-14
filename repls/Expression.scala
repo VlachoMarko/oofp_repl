@@ -36,7 +36,7 @@ object Expression {
   def getExpression(rpn : String) : Expression = {
     var expressions : mutable.Stack[Expression] = mutable.Stack[Expression]()
 
-    // println("final: " + rpn)
+    println("final rpn: " + rpn)
 
     for(el : String <- rpn.split(" ")){
       if (isOp(el)){
