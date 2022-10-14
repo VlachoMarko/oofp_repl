@@ -43,9 +43,12 @@ class IntREPL extends REPLBase {
 
 
         for (i <- elements.indices) {
-             // println(" Current: " + elements(i))
-            if (isElement(elements(i))) {
-               // println("Push el: " + elements(i))
+
+            if (variables.contains(elements(i))){
+                println("toTemp: " + variables(elements(i)))
+                tempElements += variables(elements(i)).toString
+            }
+            else if (isElement(elements(i))) {
                tempElements += elements(i)
             }
             else if (getOperator(elements(i)) != "notOp") {
