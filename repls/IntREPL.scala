@@ -11,7 +11,6 @@ class IntREPL extends REPLBase {
     type Base = Int
     override val replName: String = "ints" // TODO: name me!
     var variables : Map[String, Int] = Map[String, Int]()
-    var value : Int = 0
 
     override def readEval(command: String): String = {
         val elements: Array[String] = command.split("\\s") // split string based on whitespace
@@ -19,21 +18,20 @@ class IntREPL extends REPLBase {
         if (isVariable(elements(0)) && elements(1) == '='.toString) {
             val key : String = elements(0)
             println("sliced: " + elements.slice(2, elements.length).mkString("Array(", ", ", ")"))
-            variables += (key -> getValue(elements.slice(2, elements.length)))
+            variables += (key -> getValue(elements.slice(2, elements.length)).toInt)
             println(key + " -> " + variables(elements(0)))
 
             key + " = " + variables(key).toString
         } else {
-            getValue(elements).toString
+            getValue(elements)
         }
 
     }
 
-    def getValue(elements: Array[String]): Int = {
-
-        value = getExpression(stackToString(getRPN(elements))).value
-        println("final: " + value.toString)
-        value
+    def getValue(elements: Array[String]): String = {
+        val value : Expression = getExpression(stackToString(getRPN(elements)))
+        println("final: " + value.binding(value.value))
+        value.binding(value.value).toString
     }
 
     def getRPN(elements: Array[String]): mutable.Stack[String] = {
