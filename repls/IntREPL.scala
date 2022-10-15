@@ -15,13 +15,16 @@ class IntREPL extends REPLBase {
     override def readEval(command: String): String = {
         val elements: Array[String] = command.split("\\s") // split string based on whitespace
         println(elements.mkString(" "))
+
         if (isVariable(elements(0)) && elements(1) == '='.toString) {
             val key : String = elements(0)
             println("sliced: " + elements.slice(2, elements.length).mkString("Array(", ", ", ")"))
-            variables += (key -> getValue(elements.slice(2, elements.length)).toInt)
-            println(key + " -> " + variables(elements(0)))
 
+            variables += (key -> getValue(elements.slice(2, elements.length)).toInt)
+
+            println(key + " -> " + variables(elements(0)))
             key + " = " + variables(key).toString
+
         } else {
             getValue(elements)
         }
@@ -29,9 +32,13 @@ class IntREPL extends REPLBase {
     }
 
     def getValue(elements: Array[String]): String = {
-        val value : Expression = getExpression(stackToString(getRPN(elements)))
-        println("final: " + value.binding(value.value))
-        value.binding(value.value).toString
+        var simpleMode : Boolean = if (elements(0) == "@") true else false
+
+        val exp : Expression = getExpression(stackToString(getRPN(elements)))
+
+        if (simpleMode) { println("final: " + exp.value); exp.value }
+        else { println("final: " + exp.binding(exp.value)); exp.binding(exp.value).toString }
+
     }
 
     def getRPN(elements: Array[String]): mutable.Stack[String] = {
