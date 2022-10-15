@@ -13,17 +13,17 @@ abstract class Expression {
     "The value of " + toString + " is " + value
 }
 
-case class Constant(n : String) extends Expression {
-  override val value: String = n
-  override var binding: Map[String, Int] = Map[String,Int]({n -> n.toInt})
+case class Constant(n : Int) extends Expression {
+  override val value: String = n.toString
+  override var binding: Map[String, Int] = Map[String,Int]({value -> n})
 
 }
 
-case class Negative(n: Int) extends Expression {
-  override def value: String = (-n).toString
-  override var binding: Map[String, Int] = Map[String, Int]({(-n).toString -> n})
+case class Negative(n: Expression) extends Expression {
+  override def value: String = n.binding(n.value).toString
+  override var binding: Map[String, Int] = Map[String, Int]({value -> n.binding(n.value)})
 
-  println("Neg binding: " + binding + " key: " + (-n).toString)
+  println("Neg binding: " + binding + " key: " + value)
 }
 
  case class Variable(n: String) extends Expression {
@@ -31,21 +31,31 @@ case class Negative(n: Int) extends Expression {
    override var binding: Map[String, Int] = Map[String,Int]()
 }
 
-case class Operator(lhs : Expression, operatorName : String, rhs : Expression ) extends Expression {
-  override def value: String = getValue(lhs, operatorName, rhs)
+case class Operator(lhs : Expression, operator : String, rhs : Expression ) extends Expression {
+  override def value: String = getValue(lhs, operator, rhs)
   override var binding: Map[String, Int] = Map[String,Int]()
-  if (isNumber(value) || isNegative(value)) binding += (value -> value.toInt)
+  if (!isStrValue(lhs, rhs)) binding += (value -> value.toInt)
 
-  private def getValue(lhs: Expression, operatorName: String, rhs: Expression): String = {
-    if (isNumber(lhs.value) || isNegative(lhs.value) || isNumber(rhs.value) || isNegative(rhs.value)) {
+
+  private def getValue(lhs: Expression, operator: String, rhs: Expression): String = {
+    if (isStrValue(lhs, rhs)) {
+      lhs.value + " " + operator + " " + rhs.value
+    } else {
       println("int value")
-      getIntValue(lhs.binding(lhs.value), operatorName, rhs.binding(rhs.value)).toString
+      getIntValue(lhs.binding(lhs.value), operator, rhs.binding(rhs.value)).toString
     }
-    else if (isVariable(lhs.value) || isVariable(rhs.value)) {
-      println("str value")
-      getStrValue(lhs.value, operatorName, rhs.value)
+  }
+
+  private def isStrValue(lhs: Expression, rhs: Expression) : Boolean = {
+   isVar(lhs) || isVar(rhs)
+  }
+
+  private def isVar(exp: Expression): Boolean = {
+    println("exp: " + exp)
+    exp match {
+      case Variable(_) => {println("isVar true"); true}
+      case _ => {println("isVar false"); false}
     }
-    else throw new Error("Can't handle this operation: " + lhs.value + " " + operatorName + " " + rhs.value)
   }
 
   private def getIntValue(lhs: Int, opName: String, rhs: Int): Int = {
@@ -55,17 +65,8 @@ case class Operator(lhs : Expression, operatorName : String, rhs : Expression ) 
       case "-" => lhs - rhs
     }
   }
-  private def getStrValue(lhs: String, opName: String, rhs: String) : String = {
-    opName match {
-      case "+" => lhs + " + " +  rhs
-      case "*" => lhs + " * " + rhs
-      case "-" => lhs + " - " + rhs
-    }
-  }
 
-
-
-  override def toString: String = "(" + lhs.toString + operatorName + rhs.toString + ")"
+  override def toString: String = "(" + lhs.toString + operator + rhs.toString + ")"
 }
 
 object Expression {
@@ -73,29 +74,41 @@ object Expression {
   def getExpression(input : String) : Expression = {
     var expressions : mutable.Stack[Expression] = mutable.Stack[Expression]()
     var rpn : String = input
+    var simple : Boolean = false
 
     if (input.charAt(0) == '@'){
       rpn = rpn.slice(2, rpn.length)
+      simple = true
     }
 
     println("final rpn: " + rpn)
 
     for(el : String <- rpn.split(" ")){
-      if (isOp(el)){
+
+      if (isOp(el) && simple){
+        val rhs = expressions.pop()
+        val lhs = expressions.pop()
+        expressions.push(simplify(Operator(lhs, el, rhs)))
+      }
+      else if (isOp(el)) {
         val rhs = expressions.pop()
         val lhs = expressions.pop()
         val result = Operator(lhs, el, rhs)
         expressions.push(result)
       }
       else if (isNegative(el)) {
-        expressions.push(Negative(el.toInt))
+        expressions.push(Negative(Constant(el.toInt)))
       }
       else if (isVariable(el)){
         expressions.push(Variable(el))
       }
       else if (isNumber(el)){
-        expressions.push(Constant(el))
+        expressions.push(Constant(el.toInt))
       } else throw new Error("Unknown expression element " + el)
+
+      if (simple){
+        expressions.push(simplify(expressions.pop()))
+      }
 
       println("added: " + expressions.top)
     }
@@ -121,6 +134,31 @@ object Expression {
     }
     true
   }
+
+  def simplify(exp: Expression) : Expression = {
+    exp match {
+      case Negative(Negative(n)) => Negative(n)
+      case Negative(e) => Negative(simplify(e))
+
+      case Operator(e, "-", Constant(0)) => simplify(e)
+      case Operator(e, "+", Constant(0)) => simplify(e)
+      case Operator(Constant(0), "+", e) => simplify(e)
+
+      case Operator(e, "*", Constant(0)) => Constant(0)
+      case Operator(Constant(0), "*", e) => Constant(0)
+
+      case Operator(Variable(n), "*", Constant(0)) => Constant(0)
+      case Operator(Constant(0), "*", Variable(n)) => Constant(0)
+
+      case Operator(e, "*", Constant(1)) => simplify(e)
+      case Operator(Constant(1), "*", e) => simplify(e)
+
+      case Operator(l, op, r) => Operator(simplify(l), op, simplify(r))
+      case _ => exp
+    }
+  }
+
+
 
 }
 
