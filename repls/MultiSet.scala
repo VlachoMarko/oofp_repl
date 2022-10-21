@@ -9,7 +9,8 @@ import repls.MultiSet.empty
  */
 
 
-case class MultiSet[T] (multiplicity: Map[T, Int]) {
+case class MultiSet[T] (multiplicity: Map[T, Int], elements : Seq[T] = Seq[T]()) {
+
 
     /* TODO
         Intersection of two multisets:
@@ -25,7 +26,23 @@ case class MultiSet[T] (multiplicity: Map[T, Int]) {
         Example:
         {a,b,c,c} + {a,c,d} = {a,a,b,c,c,c,d}
      */
-    def +(that: MultiSet[T]): MultiSet[T] = empty[T]
+    def +(that: MultiSet[T]): MultiSet[T] = {
+
+        var resElements : Seq[T] = Seq[T]()
+
+        val elements1 : Seq[T] = this.elements
+        val elements2 : Seq[T] = that.elements
+
+        for(el <- elements1){
+            resElements = resElements :+ el
+        }
+        for(el <- elements2){
+            resElements = resElements :+ el
+        }
+        println("res length: " + resElements.length)
+
+        MultiSet[T](resElements)
+    }
 
     /* TODO
         Subtraction of two multisets:
@@ -42,7 +59,7 @@ case class MultiSet[T] (multiplicity: Map[T, Int]) {
         The order of the elements in the sequence does not matter.
      */
     def toSeq: Seq[T] = {
-        Seq.empty
+        elements
     }
 
     val MaxCountForDuplicatePrint = 5
@@ -64,8 +81,31 @@ case class MultiSet[T] (multiplicity: Map[T, Int]) {
 
 object MultiSet {
     def empty[T] : MultiSet[T] = MultiSet(Map[T,Int]())
+
+
     /* TODO
         Write a constructor that constructs a multiset from a sequence of elements
      */
-    def apply[T](elements: Seq[T]): MultiSet[T] = empty[T]
+    def apply[T](elements: Seq[T]): MultiSet[T] = {
+        var multiplicity : Map[T, Int] = Map[T, Int]()
+
+        elements.foreach(addToSet)
+
+        def addToSet(el: T): Unit = {
+
+            if (multiplicity.contains(el)) {
+                multiplicity.updated(el, multiplicity(el) + 1)
+                // println("contains, increased: " + el)
+            }
+            else {
+                multiplicity += (el -> 1)
+                // println("not contains, added: " + el)
+            }
+        }
+        MultiSet[T](multiplicity, elements)
+    }
+
+    //TODO: getElements(multiplicities)
+
+
 }
