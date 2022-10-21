@@ -1,6 +1,6 @@
 package repls
 
-import repls.Expression.isNegative
+import repls.Expression.{isNegative, simplify}
 import repls.IntREPL.{isNumber, isVariable}
 
 import scala.collection.mutable
@@ -53,6 +53,7 @@ case class Operator(lhs : Expression, operator : String, rhs : Expression ) exte
   private def isVar(exp: Expression): Boolean = {
     println("exp: " + exp)
     exp match {
+      case Operator(a, op, b) => { isVar(a) || isVar(b) }
       case Variable(_) => {println("isVar true"); true}
       case _ => {println("isVar false"); false}
     }
@@ -136,6 +137,7 @@ object Expression {
   }
 
   def simplify(exp: Expression) : Expression = {
+
     exp match {
       case Negative(Negative(n)) => Negative(n)
       case Negative(e) => Negative(simplify(e))
@@ -153,6 +155,7 @@ object Expression {
       case Operator(e, "*", Constant(1)) => simplify(e)
       case Operator(Constant(1), "*", e) => simplify(e)
 
+      case Operator(l, "-", r) => if(l == r) {Constant(0)} else {Operator(simplify(l), "-", simplify(r))}
       case Operator(l, op, r) => Operator(simplify(l), op, simplify(r))
       case _ => exp
     }
