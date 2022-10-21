@@ -39,7 +39,7 @@ case class Operator(lhs : Expression, operator : String, rhs : Expression ) exte
 
   private def getValue(lhs: Expression, operator: String, rhs: Expression): String = {
     if (isStrValue(lhs, rhs)) {
-      lhs.value + " " + operator + " " + rhs.value
+      getStrVal(lhs, operator, rhs)
     } else {
       println("int value")
       getIntValue(lhs.binding(lhs.value), operator, rhs.binding(rhs.value)).toString
@@ -64,6 +64,33 @@ case class Operator(lhs : Expression, operator : String, rhs : Expression ) exte
       case "+" => lhs + rhs
       case "*" => lhs * rhs
       case "-" => lhs - rhs
+    }
+  }
+
+  private def getStrVal(lhs: Expression, op: String, rhs: Expression) : String = {
+
+    var lhsStr : String = getSideVal(lhs)
+    var rhsStr : String = getSideVal(rhs)
+
+    lhsStr + " " + op + " " + rhsStr
+  }
+
+  private def getSideVal(side: Expression) : String = {
+    side match {
+      case Operator(l, op, r) => {
+        if (isVar(side)) {
+          if(op == "*") {
+            getSideVal(l) + " " + op + " " + getSideVal(r)
+          }
+          else {
+            "( " + getSideVal(l) + " " + op + " " + getSideVal(r) + " )"
+          }
+        }
+        else {
+          side.value
+        }
+      }
+      case _ => side.value
     }
   }
 
@@ -155,10 +182,40 @@ object Expression {
       case Operator(e, "*", Constant(1)) => simplify(e)
       case Operator(Constant(1), "*", e) => simplify(e)
 
-      case Operator(l, "-", r) => if(l == r) {Constant(0)} else {Operator(simplify(l), "-", simplify(r))}
+      case Operator(Operator(l1, "*", r1), "+", Operator(l2, "*", r2)) => distributivity(l1, l2, r1, r2)
+      case Operator(l, "-", r) => {
+        if(l == r) {
+          Constant(0)
+        } else {Operator(simplify(l), "-", simplify(r))}
+      }
       case Operator(l, op, r) => Operator(simplify(l), op, simplify(r))
       case _ => exp
     }
+  }
+
+  private def distributivity(l1: Expression, r1 : Expression, l2: Expression, r2: Expression) : Expression = {
+    if (l1 == l2) {
+      println("apply distributivity1")
+      Operator(simplify(l1), "*", Operator(simplify(r1), "+", simplify(r2)))
+    }
+    else if (l1 == r2) {
+      println("apply distributivity2")
+      Operator(simplify(l1), "*", Operator(simplify(r1), "+", simplify(l2)))
+    }
+    else if (r1 == r2){
+      println("apply distributivity3")
+      Operator(simplify(r1), "*", Operator(simplify(l1), "+", simplify(l2)))
+    }
+    else if (r1 == l2){
+      println("apply distributivity4")
+      Operator(simplify(r1), "*", Operator(simplify(l1), "+", simplify(r2)))
+    }
+    else {
+      println("dont know what to do")
+      Operator(Operator(l1, "*", r1), "+", Operator(l2, "*", r2))
+    }
+
+
   }
 
 
