@@ -14,15 +14,15 @@ class IntREPL extends REPLBase {
 
     override def readEval(command: String): String = {
         val elements: Array[String] = command.split("\\s") // split string based on whitespace
-        println(elements.mkString(" "))
+        // println(elements.mkString(" "))
 
         if (isVariable(elements(0)) && elements(1) == '='.toString) {
             val key : String = elements(0)
-            println("sliced: " + elements.slice(2, elements.length).mkString("Array(", ", ", ")"))
+            // ("sliced: " + elements.slice(2, elements.length).mkString("Array(", ", ", ")"))
 
             variables += (key -> getValue(elements.slice(2, elements.length)).toInt)
 
-            println(key + " -> " + variables(elements(0)))
+            // println(key + " -> " + variables(elements(0)))
             key + " = " + variables(key).toString
 
         } else {
@@ -36,8 +36,14 @@ class IntREPL extends REPLBase {
 
         val exp : Expression = getExpression(stackToString(getRPN(elements)))
 
-        if (simpleMode) { println("final: " + exp.value); exp.value }
-        else { println("final: " + exp.binding(exp.value)); exp.binding(exp.value).toString }
+        if (simpleMode) {
+            // println("final: " + exp.value)
+            exp.value
+        }
+        else {
+            //println("final: " + exp.binding(exp.value))
+            exp.binding(exp.value).toString
+        }
 
     }
 
@@ -50,7 +56,7 @@ class IntREPL extends REPLBase {
         for (i <- elements.indices) {
 
             if (variables.contains(elements(i))){
-                println("toTemp: " + variables(elements(i)))
+                // println("toTemp: " + variables(elements(i)))
                 tempElements += variables(elements(i)).toString
             }
             else if (isElement(elements(i))) {

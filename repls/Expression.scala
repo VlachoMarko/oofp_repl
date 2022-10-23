@@ -23,7 +23,6 @@ case class Negative(n: Expression) extends Expression {
   override def value: String = n.binding(n.value).toString
   override var binding: Map[String, Int] = Map[String, Int]({value -> n.binding(n.value)})
 
-  println("Neg binding: " + binding + " key: " + value)
 }
 
  case class Variable(n: String) extends Expression {
@@ -41,7 +40,6 @@ case class Operator(lhs : Expression, operator : String, rhs : Expression ) exte
     if (isStrValue(lhs, rhs)) {
       getStrVal(lhs, operator, rhs)
     } else {
-      println("int value")
       getIntValue(lhs.binding(lhs.value), operator, rhs.binding(rhs.value)).toString
     }
   }
@@ -51,11 +49,10 @@ case class Operator(lhs : Expression, operator : String, rhs : Expression ) exte
   }
 
   private def isVar(exp: Expression): Boolean = {
-    println("exp: " + exp)
     exp match {
       case Operator(a, op, b) => { isVar(a) || isVar(b) }
-      case Variable(_) => {println("isVar true"); true}
-      case _ => {println("isVar false"); false}
+      case Variable(_) => true
+      case _ => false
     }
   }
 
@@ -109,7 +106,7 @@ object Expression {
       simple = true
     }
 
-    println("final rpn: " + rpn)
+    // println("final rpn: " + rpn)
 
     for(el : String <- rpn.split(" ")){
 
@@ -138,7 +135,7 @@ object Expression {
         expressions.push(simplify(expressions.pop()))
       }
 
-      println("added: " + expressions.top)
+      // println("added: " + expressions.top)
     }
 
     expressions.top
@@ -195,23 +192,19 @@ object Expression {
 
   private def distributivity(l1: Expression, r1 : Expression, l2: Expression, r2: Expression) : Expression = {
     if (l1 == l2) {
-      println("apply distributivity1")
       Operator(simplify(l1), "*", Operator(simplify(r1), "+", simplify(r2)))
     }
     else if (l1 == r2) {
-      println("apply distributivity2")
       Operator(simplify(l1), "*", Operator(simplify(r1), "+", simplify(l2)))
     }
     else if (r1 == r2){
-      println("apply distributivity3")
       Operator(simplify(r1), "*", Operator(simplify(l1), "+", simplify(l2)))
     }
     else if (r1 == l2){
-      println("apply distributivity4")
       Operator(simplify(r1), "*", Operator(simplify(l1), "+", simplify(r2)))
     }
     else {
-      println("dont know what to do")
+      // println("dont know what to do")
       Operator(Operator(l1, "*", r1), "+", Operator(l2, "*", r2))
     }
 
