@@ -1,3 +1,4 @@
+/*
 package repls
 
 import repls.Expression.{isNegative, simplify}
@@ -5,50 +6,55 @@ import repls.IntREPL.{isNumber, isVariable}
 
 import scala.collection.mutable
 
+abstract class Expression[Base] extends REPLBase {
 
-abstract class Expression {
   def value : String
-  var binding : Map[String, Int]
+  var binding : Map[String, expBase]
   def describe : String =
     "The value of " + toString + " is " + value
 }
 
-case class Constant(n : Int) extends Expression {
-  override val value: String = n.toString
-  override var binding: Map[String, Int] = Map[String,Int]({value -> n})
+case class Constant[expBase](n : expBase) extends Expression {
+  override def value: String = n.toString
+  override var binding: Map[String, Base] = Map[String, Base](value -> n)
 
 }
 
-case class Negative(n: Expression) extends Expression {
+case class Negative[Base](n: Expression[Base]) extends Expression[Base] {
   override def value: String = n.binding(n.value).toString
-  override var binding: Map[String, Int] = Map[String, Int]({value -> n.binding(n.value)})
-
+  override var binding: Map[String, Base] = Map[String, Base](value -> n)
 }
 
- case class Variable(n: String) extends Expression {
-   override def value: String = n
-   override var binding: Map[String, Int] = Map[String,Int]()
+ case class Variable[Base](n: String) extends Expression[Base] {
+   override var value: String = n
+   override var binding: Map[String, Base] = Map[String, Base]()
 }
 
-case class Operator(lhs : Expression, operator : String, rhs : Expression ) extends Expression {
-  override def value: String = getValue(lhs, operator, rhs)
-  override var binding: Map[String, Int] = Map[String,Int]()
-  if (!isStrValue(lhs, rhs)) binding += (value -> value.toInt)
+case class Operator[Base](lhs : Expression[Base], operator : String, rhs : Expression[Base]) extends Expression[Base]{
 
+  override var binding: Map[String, Base] = Map[String, Base]()
+  override var value: String = " "
+  setValues(lhs, operator, rhs)
 
-  private def getValue(lhs: Expression, operator: String, rhs: Expression): String = {
+   private def setValues(lhs: Expression[Base], operator: String, rhs: Expression[Base]): Unit = {
     if (isStrValue(lhs, rhs)) {
-      getStrVal(lhs, operator, rhs)
+      println("strval")
+      //TODO: Value string should only be set
+      value = getStrVal(lhs, operator, rhs)
     } else {
-      getIntValue(lhs.binding(lhs.value), operator, rhs.binding(rhs.value)).toString
+      println("intval")
+      //TODO: Here the value string should be set parallel
+      var tempVal = applyOperator(lhs.binding(lhs.value), operator, rhs.binding(rhs.value))
+      this.binding += (value -> tempVal)
+
     }
   }
 
-  private def isStrValue(lhs: Expression, rhs: Expression) : Boolean = {
+  private def isStrValue[Base](lhs: Expression[Base], rhs: Expression[Base]) : Boolean = {
    isVar(lhs) || isVar(rhs)
   }
 
-  private def isVar(exp: Expression): Boolean = {
+  private def isVar[Base](exp: Expression[Base]): Boolean = {
     exp match {
       case Operator(a, op, b) => { isVar(a) || isVar(b) }
       case Variable(_) => true
@@ -56,15 +62,8 @@ case class Operator(lhs : Expression, operator : String, rhs : Expression ) exte
     }
   }
 
-  private def getIntValue(lhs: Int, opName: String, rhs: Int): Int = {
-    opName match {
-      case "+" => lhs + rhs
-      case "*" => lhs * rhs
-      case "-" => lhs - rhs
-    }
-  }
 
-  private def getStrVal(lhs: Expression, op: String, rhs: Expression) : String = {
+  private def getStrVal[Base](lhs: Expression[Base], op: String, rhs: Expression[Base]) : String = {
 
     var lhsStr : String = getSideVal(lhs)
     var rhsStr : String = getSideVal(rhs)
@@ -72,7 +71,7 @@ case class Operator(lhs : Expression, operator : String, rhs : Expression ) exte
     lhsStr + " " + op + " " + rhsStr
   }
 
-  private def getSideVal(side: Expression) : String = {
+  private def getSideVal(side: Expression[Base]) : String = {
     side match {
       case Operator(l, op, r) => {
         if (isVar(side)) {
@@ -92,12 +91,14 @@ case class Operator(lhs : Expression, operator : String, rhs : Expression ) exte
   }
 
   override def toString: String = "(" + lhs.toString + operator + rhs.toString + ")"
+
+
 }
 
 object Expression {
 
-  def getExpression(input : String) : Expression = {
-    var expressions : mutable.Stack[Expression] = mutable.Stack[Expression]()
+  def getExpression[T](input : String) : Expression[T] = {
+    var expressions : mutable.Stack[Expression[T]] = mutable.Stack[Expression[T]()
     var rpn : String = input
     var simple : Boolean = false
 
@@ -106,10 +107,8 @@ object Expression {
       simple = true
     }
 
-    // println("final rpn: " + rpn)
-
     for(el : String <- rpn.split(" ")){
-
+      println("curr el: " + el)
       if (isOp(el) && simple){
         val rhs = expressions.pop()
         val lhs = expressions.pop()
@@ -122,7 +121,7 @@ object Expression {
         expressions.push(result)
       }
       else if (isNegative(el)) {
-        expressions.push(Negative(Constant(el.toInt)))
+        expressions.push(Negative(Constant(el)))
       }
       else if (isVariable(el)){
         expressions.push(Variable(el))
@@ -160,7 +159,7 @@ object Expression {
     true
   }
 
-  def simplify(exp: Expression) : Expression = {
+  def simplify[T](exp: Expression[T]) : Expression[T] = {
 
     exp match {
       case Negative(Negative(n)) => Negative(n)
@@ -190,7 +189,7 @@ object Expression {
     }
   }
 
-  private def distributivity(l1: Expression, r1 : Expression, l2: Expression, r2: Expression) : Expression = {
+  private def distributivity[T](l1: Expression[T], r1 : Expression[T], l2: Expression[T], r2: Expression[T]) : Expression[T] = {
     if (l1 == l2) {
       Operator(simplify(l1), "*", Operator(simplify(r1), "+", simplify(r2)))
     }
@@ -212,6 +211,6 @@ object Expression {
   }
 
 
-
 }
 
+*/
