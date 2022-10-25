@@ -1,8 +1,6 @@
 package repls
 
-import repls.MultiSet.{empty, max, min}
-
-import scala.collection.mutable.ListBuffer
+import repls.MultiSet.{max, min}
 
 /*
     Multiset is a Map of elements and their respective count.
@@ -11,7 +9,7 @@ import scala.collection.mutable.ListBuffer
  */
 
 
-case class MultiSet[T](multiplicity: Map[T, Int], elements : Seq[T] = Seq[T]()) {
+case class MultiSet[T](multiplicity: Map[T, Int], elements : Seq[T] = Seq[T]()) extends RingWithMinus[MultiSet[T]]{
 
     /* TODO
         Intersection of two multisets:
@@ -153,10 +151,6 @@ case class MultiSet[T](multiplicity: Map[T, Int], elements : Seq[T] = Seq[T]()) 
 object MultiSet {
     def empty[T] : MultiSet[T] = MultiSet(Map[T,Int]())
 
-
-    /* TODO
-        Write a constructor that constructs a multiset from a sequence of elements
-     */
     def apply[T](elements: Seq[T]): MultiSet[T] = {
         var multiplicity : Map[T, Int] = Map[T, Int]()
 
@@ -175,21 +169,6 @@ object MultiSet {
         }
         MultiSet[T](multiplicity, elements)
     }
-
-    /*def apply[T](multiplicity: Map[T, Int]) : MultiSet[T] = {
-
-        var elements : Vector[Seq[T]] = Vector[Seq[T]]()
-
-        multiplicity.keys.foreach(addToElements)
-
-        def addToElements(key : T): Unit = {
-
-            elements = elements :+ Seq.fill(multiplicity(key))(key)
-        }
-
-
-        MultiSet[T](multiplicity, elements.flatten)
-    }*/
 
     def abs(number : Int) : Int = {
         if (number < 0) {number * (-1)}
