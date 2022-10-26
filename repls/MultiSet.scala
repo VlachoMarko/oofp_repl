@@ -11,12 +11,16 @@ import repls.MultiSet.{max, min}
 
 case class MultiSet[T](multiplicity: Map[T, Int], elements : Seq[T] = Seq[T]()) extends RingWithMinus[MultiSet[T]]{
 
+
+
     /* TODO
         Intersection of two multisets:
         ∀x m_c(x) = min(m_a(x), m_b(x))
         Example:
         {a,b,b,c,c,c} * {b,c,c,c,c} = {b,c,c,c}
      */
+
+
     def *(that: MultiSet[T]): MultiSet[T] = {
 
         var resMap = emptyMap
@@ -36,6 +40,7 @@ case class MultiSet[T](multiplicity: Map[T, Int], elements : Seq[T] = Seq[T]()) 
             }
         }
 
+        resMap = clearZeroes(resMap)
         MultiSet[T](resMap)
     }
 
@@ -75,6 +80,7 @@ case class MultiSet[T](multiplicity: Map[T, Int], elements : Seq[T] = Seq[T]()) 
             }
         }
 
+        resMap = clearZeroes(resMap)
         MultiSet[T](resMap)
     }
 
@@ -106,7 +112,7 @@ case class MultiSet[T](multiplicity: Map[T, Int], elements : Seq[T] = Seq[T]()) 
             }
 
         }
-
+        resMap = clearZeroes(resMap)
         MultiSet[T](resMap)
     }
 
@@ -141,11 +147,22 @@ case class MultiSet[T](multiplicity: Map[T, Int], elements : Seq[T] = Seq[T]()) 
                 elem.toString + " -> " + count.toString
             else Seq.fill(count)(elem).mkString(",")
         }
+        println("mul: " + multiplicity)
         val keyStringSet = multiplicity.keySet.map(elemToString)
         "{" + keyStringSet.toSeq.sorted.mkString(",") + "}"
+
+
     }
 
-
+    private def clearZeroes(mul: Map[T, Int]): Map[T, Int] = {
+        var result: Map[T, Int] = Map[T, Int]()
+        for (key <- mul.keys) {
+            if (mul(key) != 0) {
+                result += (key -> mul(key))
+            }
+        }
+        result
+    }
 }
 
 object MultiSet {
