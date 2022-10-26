@@ -1,10 +1,8 @@
 package repls
 
-import repls.IntREPL.{getOpVal, getOperator, isElement, isNumber, isVariable, stackToString}
-import repls.REPLBase.{isNegative, isOp}
-
+import repls.REPLBase.{isNegative, isNumber, isOp, isVariable, stackToString}
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
+
 
 class IntREPL extends REPLBase {
     // Have a REPL of type Int
@@ -14,121 +12,25 @@ class IntREPL extends REPLBase {
     var variables : Map[String, Base] = Map[String, Base]()
 
     override def readEval(command: String): String = {
-        val elements: Array[String] = command.split("\\s") // split string based on whitespace
+        var elements: Array[String] = command.split("\\s") // split string based on whitespace
         // println(elements.mkString(" "))
 
-
-
-        if (isVariable(elements(0)) && elements(1) == '='.toString) {
+        if (isVariable(elements(0)) && elements(1) == "=") {
             val key : String = elements(0)
-            val exp : Expression[Base] = getExp(elements.slice(2, elements.length))
+            elements = elements.slice(2, elements.length)
+            val exp : Expression[Base] = getIntExpression(stackToString(getRPN(elements)))
             variables += (key -> exp.binding(exp.value))
 
             key + " = " + variables(key).toString
         }
         else {
-            val exp : Expression[Base] = getExp(elements)
+            val exp : Expression[Base] = getIntExpression(stackToString(getRPN(elements)))
             exp.value
         }
 
     }
 
-    def getExp(elements: Array[String]): Expression[Base] = {
-        var simpleMode : Boolean = if (elements(0) == "@") true else false
 
-        val exp : Expression[Base] = getIntExpression(stackToString(getRPN(elements)))
-
-        if (simpleMode) {
-            println("@final: " + exp.value)
-            exp
-        }
-        else {
-            exp
-        }
-
-    }
-
-    def getRPN(elements: Array[String]): mutable.Stack[String] = {
-        var tempElements: mutable.Queue[String] = mutable.Queue[String]()
-        val operators: mutable.Stack[String] = mutable.Stack[String]()
-        val rpn: mutable.Stack[String] = mutable.Stack[String]()
-
-
-        for (i <- elements.indices) {
-
-            if (variables.contains(elements(i))){
-                // println("toTemp: " + variables(elements(i)))
-                tempElements += variables(elements(i)).toString
-            }
-            else if (isElement(elements(i))) {
-               tempElements += elements(i)
-            }
-            else if (getOperator(elements(i)) != "notOp") {
-                // println("To op")
-                handleOps(elements(i))
-            }
-            else println("Cannot process element: " + elements(i))
-
-            // println("Loop | temp: " + tempElements + " | rpn: " + rpn + " | ops: " + operators.mkString("Stack:( ", ", ", " )"))
-        }
-
-        for (i <- tempElements.indices) {
-            rpn.push(tempElements(i))
-        }
-
-        while (operators.nonEmpty) {
-            if (operators.top == "(" || operators.top == ")") {
-                operators.pop()
-            }
-            else rpn.push(operators.pop())
-        }
-
-        def handleOps(op: String): Unit = {
-            if (operators.nonEmpty) {
-
-                if (op == '('.toString) {
-
-                    for (i <- tempElements.indices) {
-                        rpn.push(tempElements(i))
-                    }
-                    tempElements = mutable.Queue[String]()
-                    operators.push(op)
-                }
-                else if (op == ')'.toString) {
-
-                    for (i <- tempElements.indices) {
-                        rpn.push(tempElements(i))
-                    }
-                    while (operators.top != "(" && operators.top != ")") {
-                        rpn.push(operators.pop())
-                    }
-                    operators.pop()
-                    tempElements = mutable.Queue[String]()
-                }
-                else if (operators.top != "("){
-
-                    val opVal: Int = getOpVal(op)
-                    val stackVal: Int = getOpVal(operators.top)
-
-                    if (opVal < stackVal) {
-                        tempElements += operators.pop()
-                        operators.push(op)
-                    }
-                    else if (opVal == stackVal) {
-                        if (operators.top == '-'.toString) {
-                            tempElements += operators.pop()
-                            operators.push(op)
-                        } else operators.push(op)
-
-                    } else { operators.push(op) }
-
-                } else { operators.push(op) }
-
-            } else { operators.push(op) }
-        }
-
-        rpn
-    }
 
     def getIntExpression(input: String): Expression[Base] = {
         var expressions: mutable.Stack[Expression[Base]] = mutable.Stack[Expression[Base]]()
@@ -223,65 +125,5 @@ class IntREPL extends REPLBase {
             Operator(Operator(l1, "*", r1), "+", Operator(l2, "*", r2))
         }
     }
-
-}
-
-object IntREPL {
-
-
-    def getOperator(str: String): String = {
-        str match {
-            case "+" => "+"
-            case "-" => "-"
-            case "*" => "*"
-            case "(" => "("
-            case ")" => ")"
-            case _ => "notOp"
-        }
-    }
-
-    def getOpVal(op: String): Int = {
-        op match {
-            case "+" => 2
-            case "-" => 2
-            case "*" => 3
-            case _ => 0
-        }
-    }
-
-    def isElement(str: String): Boolean = {
-        if (isNumber(str) || getOperator(str) == "notOp") return true
-        false
-    }
-
-    def isVariable(str: String) : Boolean = {
-        if (!isNumber(str) && getOperator(str) == "notOp") return true
-        false
-    }
-
-    def isNumber(str: String): Boolean = {
-        if (str.isEmpty) return false
-        for (item <- str.toCharArray) {
-            if (!item.isDigit) return false
-        }
-        true
-    }
-
-    def stackToString(rpn: mutable.Stack[String]): String = {
-        var printArr: mutable.ArrayBuffer[String] = ArrayBuffer[String]()
-        var printStr: String = ""
-
-        while (rpn.nonEmpty) {
-            printArr += rpn.pop()
-        }
-        printArr = printArr.reverse
-
-        for(i <- printArr.indices){
-            printStr += printArr(i)
-            printStr += " "
-        }
-        printStr
-    }
-
 
 }
