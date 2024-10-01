@@ -1,6 +1,6 @@
 # REPL Calculators - Integer and Multiset
 
-This project was developed as part of the course **Object-Oriented and Functional Programming** at **Vrije Universiteit Amsterdam (VUA)**. The aim is to implement two REPL (Read-Eval-Print-Loop) calculators in Scala:
+This project was developed as part of the course **Object-Oriented and Functional Programming** at **Vrije Universiteit Amsterdam (VU)**. The aim is to implement two REPL (Read-Eval-Print-Loop) calculators in Scala:
 1. **Integer Calculator REPL**
 2. **Multiset Calculator REPL**
 
@@ -43,6 +43,3 @@ Both calculators support expression evaluation, variable assignment, and express
 - **Inheritance and Abstract Classes**: Both REPLs extend from a common base class `REPLBase`.
 - **Pattern Matching**: Used for simplifying expressions.
 - **Type Abstraction**: Shared evaluation and parsing logic via abstract type `Base`, which is concretized as either `Int` or `Multiset`.
-
-## Course Context
-This project was part of the **Object-Oriented and Functional Programming** course at **VUA**, focusing on implementing efficient and reusable code structures through functional and object-oriented principles.
