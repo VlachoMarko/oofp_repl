@@ -32,12 +32,12 @@ Both calculators support expression evaluation, variable assignment, and express
 ### Simplification Rules
 
 #### Integer REPL:
-- `0 + e → e`, `1 * e → e`
+- Identity: `0 + e → e`, `1 * e → e`
 - Distributivity: `(a * b) + (a * c)` → `a * (b + c)`
 
 #### Multiset REPL:
-- `{} + e → e`, `e * {} → {}`
-- `e * e → e`, `e - e → {}`
+- Identity: `{} + e → e`, `e * {} → {}`
+- Idempotence: `e * e → e`, `e - e → {}`
 
 ### Code Reuse Techniques
 - **Inheritance and Abstract Classes**: Both REPLs extend from a common base class `REPLBase`.
